@@ -1,0 +1,97 @@
+{
+  "name": "neuron",
+  "version": "1.0.0",
+  "description": "An advanced note taking desktop application.",
+  "main": "public/electron.js",
+  "homepage": "./",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "electron": "electron .",
+    "electron-dev": "ELECTRON_IS_DEV=true electron .",
+    "electron-pack": "electron-builder",
+    "dist": "npm run build && electron-builder --publish=never",
+    "dist-win": "npm run clean && npm run build && electron-builder --win --publish=never",
+    "dist-mac": "npm run build && electron-builder --mac --publish=never",
+    "dist-linux": "npm run build && electron-builder --linux --publish=never",
+    "clean": "rimraf dist && rimraf build",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "keywords": [
+    "notes",
+    "knowledge-management",
+    "markdown",
+    "electron"
+  ],
+  "author": "GorgJr",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^7.6.0",
+    "electron": "^22.0.0",
+    "electron-builder": "^24.0.0",
+    "rimraf": "^3.0.2",
+    "wait-on": "^7.0.1"
+  },
+  "dependencies": {
+    "allotment": "^1.20.2",
+    "chokidar": "^3.5.3",
+    "d3": "^7.8.2",
+    "fuse.js": "^6.6.2",
+    "gray-matter": "^4.0.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-markdown": "^8.0.7",
+    "react-scripts": "5.0.1",
+    "remark-gfm": "^3.0.1",
+    "uuid": "^9.0.0"
+  },
+  "build": {
+    "appId": "com.neuron.app",
+    "productName": "Neuron",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "build/**/*",
+      "public/electron.js",
+      "public/preload.js"
+    ],
+    "extraFiles": [
+      {
+        "from": "public/electron.js",
+        "to": "electron.js"
+      },
+      {
+        "from": "public/preload.js", 
+        "to": "preload.js"
+      }
+    ],
+    "win": {
+      "target": "portable"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
