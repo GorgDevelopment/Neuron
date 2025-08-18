@@ -42,8 +42,8 @@ A powerful, modern note-taking and knowledge management desktop application buil
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/neuron.git
-   cd neuron
+   git clone https://github.com/GorgDevelopment/Neuron.git
+   cd Neuron
    ```
 
 2. **Install dependencies**
@@ -51,11 +51,9 @@ A powerful, modern note-taking and knowledge management desktop application buil
    npm install
    ```
 
-3. **Run in development mode**
+3. **Run**
    ```bash
-   npm start
-   # In another terminal:
-   npm run electron-dev
+   npm run electron
    ```
 
 ### Building for Production
@@ -114,7 +112,7 @@ We welcome contributions! Here's how you can help:
 1. **Fork the repository** on GitHub
 2. **Clone your fork**
    ```bash
-   git clone https://github.com/yourusername/neuron.git
+   git clone https://github.com/GorgDevelopment/Neuron.git
    ```
 3. **Create a feature branch**
    ```bash
@@ -124,10 +122,9 @@ We welcome contributions! Here's how you can help:
    ```bash
    npm install
    ```
-5. **Start development**
+5. **Start**
    ```bash
-   npm start
-   npm run electron-dev
+   npm run electron
    ```
 
 ### Contribution Guidelines
