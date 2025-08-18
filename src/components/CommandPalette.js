@@ -295,7 +295,7 @@ function CommandPalette({ onClose, onCreateNote, onFileSelect, files }) {
     }
   ];
 
-  const fileCommands = files.map(file => ({
+  const fileCommands = (files || []).map(file => ({
     id: `open-${file.path}`,
     name: `Open: ${file.name}`,
     icon: '📄',
@@ -343,7 +343,7 @@ function CommandPalette({ onClose, onCreateNote, onFileSelect, files }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="command-palette" onClick={e => e.stopPropagation()}>
+      <div className="command-palette" onClick={e => e.stopPropagation()} style={{background: 'var(--color-secondary)', border: '1px solid var(--color-border)'}}>
         <div className="command-header">
           <input
             ref={inputRef}

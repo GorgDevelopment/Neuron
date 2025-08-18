@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-function Sidebar({ files, currentFile, onFileSelect, onCreateNote, searchQuery, onSearchChange }) {
+function Sidebar({ files, currentFile, onFileSelect, onCreateNote, onDeleteFile, onRenameFile, searchQuery, onSearchChange }) {
   const [expandedFolders, setExpandedFolders] = useState(new Set());
 
   const toggleFolder = (folderPath) => {
@@ -43,10 +43,38 @@ function Sidebar({ files, currentFile, onFileSelect, onCreateNote, searchQuery, 
       key={file.path}
       className={`file-item ${currentFile === file.path ? 'active' : ''}`}
       style={{ paddingLeft: `${depth * 20 + 12}px` }}
-      onClick={() => onFileSelect(file.path)}
     >
-      <span className="file-icon">📄</span>
-      <span className="file-name">{file.name}</span>
+      <div className="file-content" onClick={() => onFileSelect(file.path)}>
+        <span className="file-icon">📄</span>
+        <span className="file-name">{file.name}</span>
+      </div>
+      <div className="file-actions">
+        <button 
+          className="rename-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            const newName = prompt('Enter new name:', file.name.replace('.md', ''));
+            if (newName && newName.trim() && newName !== file.name.replace('.md', '')) {
+              onRenameFile(file.name, newName.trim());
+            }
+          }}
+          title="Rename file"
+        >
+          ✏️
+        </button>
+        <button 
+          className="delete-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (window.confirm(`Delete "${file.name}"?`)) {
+              onDeleteFile(file.name);
+            }
+          }}
+          title="Delete file"
+        >
+          🗑️
+        </button>
+      </div>
     </div>
   );
 

@@ -6,6 +6,7 @@ function Canvas({ onClose }) {
   const [tool, setTool] = useState('pen');
   const [color, setColor] = useState('#007acc');
   const [strokeWidth, setStrokeWidth] = useState(2);
+  const [brushSize, setBrushSize] = useState(2);
   const [elements, setElements] = useState([]);
   const [selectedElement, setSelectedElement] = useState(null);
 
@@ -16,7 +17,8 @@ function Canvas({ onClose }) {
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
     
-    ctx.fillStyle = '#1e1e1e';
+    const backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--color-primary') || '#1e1e1e';
+    ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     redrawCanvas();
@@ -26,7 +28,8 @@ function Canvas({ onClose }) {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     
-    ctx.fillStyle = '#1e1e1e';
+    const backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--color-primary') || '#1e1e1e';
+    ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     elements.forEach(element => {
@@ -74,20 +77,39 @@ function Canvas({ onClose }) {
   };
 
   const handleMouseDown = (e) => {
-    const pos = getMousePos(e);
+    if (tool === 'text') {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const text = prompt('Enter text:');
+      if (text && text.trim()) {
+        const newElement = {
+          type: 'text',
+          x,
+          y,
+          text: text.trim(),
+          color,
+          fontSize: 16
+        };
+        setElements(prevElements => [...prevElements, newElement]);
+      }
+      return;
+    }
+    
+    setIsDrawing(true);
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
     
     if (tool === 'pen') {
-      setIsDrawing(true);
       const newElement = {
         type: 'path',
-        points: [pos],
-        color: color,
-        strokeWidth: strokeWidth
+        points: [{ x, y }],
+        color,
+        strokeWidth
       };
-      setElements(prev => [...prev, newElement]);
-    } else if (tool === 'text') {
-      setTextPosition(pos);
-      setShowTextModal(true);
+      setElements(prevElements => [...prevElements, newElement]);
     }
   };
 
@@ -99,8 +121,8 @@ function Canvas({ onClose }) {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    setElements(prev => {
-      const newElements = [...prev];
+    setElements(prevElements => {
+      const newElements = [...prevElements];
       const currentPath = newElements[newElements.length - 1];
       if (currentPath && currentPath.type === 'path') {
         currentPath.points.push({ x, y });
@@ -149,11 +171,15 @@ function Canvas({ onClose }) {
   };
 
   const clearCanvas = () => {
-    setElements([]);
+    if (window.confirm('Are you sure you want to clear the canvas? This action cannot be undone.')) {
+      setElements([]);
+    }
   };
 
-  const undoLast = () => {
-    setElements(prev => prev.slice(0, -1));
+  const undoLastAction = () => {
+    if (elements.length > 0) {
+      setElements(prevElements => prevElements.slice(0, -1));
+    }
   };
 
   return (

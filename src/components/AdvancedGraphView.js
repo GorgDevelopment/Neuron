@@ -201,13 +201,7 @@ function AdvancedGraphView({ files, currentFile, onNodeClick, onCreateNote, onDe
       .attr('stroke', '#ffffff')
       .attr('stroke-width', 3)
       .style('filter', 'url(#nodeGradient) drop-shadow(0px 2px 8px rgba(0,0,0,0.3))')
-      .on('click', (event, d) => {
-        event.stopPropagation();
-        setSelectedNode(d);
-        if (onNodeClick) {
-          onNodeClick(d.name);
-        }
-      })
+      .on('click', handleNodeClick)
       .on('contextmenu', (event, d) => {
         event.preventDefault();
         setContextMenu({
@@ -326,25 +320,64 @@ function AdvancedGraphView({ files, currentFile, onNodeClick, onCreateNote, onDe
     }
   }, [graphSettings, onNodeClick]);
 
-  const handleContextAction = useCallback((action, node) => {
+  const [connectingMode, setConnectingMode] = useState(false);
+  const [sourceNode, setSourceNode] = useState(null);
+
+  const handleContextAction = (action) => {
+    const node = contextMenu.node;
+    setContextMenu({ show: false, x: 0, y: 0, node: null });
+    
     switch (action) {
       case 'open':
         if (onNodeClick) onNodeClick(node.name);
         break;
-      case 'create':
-        if (onCreateNote) {
-          const newNoteName = `Connected to ${node.name.replace('.md', '')}`;
-          onCreateNote(newNoteName);
-        }
-        break;
       case 'delete':
         if (onDeleteNote && window.confirm(`Delete "${node.name}"?`)) {
-          onDeleteNote(node.name);
+          onDeleteNote(node.path || node.name);
+        }
+        break;
+      case 'connect':
+        setConnectingMode(true);
+        setSourceNode(node);
+        break;
+      case 'create-link':
+        const targetName = prompt('Enter target note name:');
+        if (targetName) {
+          createConnection(node.name, targetName);
         }
         break;
     }
-    setContextMenu({ show: false, x: 0, y: 0, node: null });
-  }, [onNodeClick, onCreateNote, onDeleteNote]);
+  };
+
+  const createConnection = (sourceName, targetName) => {
+    const newLink = {
+      source: sourceName,
+      target: targetName,
+      type: 'manual'
+    };
+    
+    setGraphData(prev => ({
+      ...prev,
+      links: [...prev.links, newLink]
+    }));
+  };
+
+  const handleNodeClick = (event, d) => {
+    event.stopPropagation();
+    
+    if (connectingMode && sourceNode) {
+      if (d.id !== sourceNode.id) {
+        createConnection(sourceNode.name, d.name);
+      }
+      setConnectingMode(false);
+      setSourceNode(null);
+    } else {
+      setSelectedNode(d);
+      if (onNodeClick) {
+        onNodeClick(d.name);
+      }
+    }
+  };
 
   return (
     <div className="graph-universe">

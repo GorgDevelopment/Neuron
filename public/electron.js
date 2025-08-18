@@ -247,6 +247,23 @@ ipcMain.handle('delete-note', async (event, filePath) => {
   }
 });
 
+ipcMain.handle('rename-file', async (event, oldPath, newPath) => {
+  try {
+    const oldFullPath = path.join(vaultPath, oldPath);
+    const newFullPath = path.join(vaultPath, newPath);
+    
+    if (fs.existsSync(newFullPath)) {
+      throw new Error('File with new name already exists');
+    }
+    
+    fs.renameSync(oldFullPath, newFullPath);
+    return true;
+  } catch (error) {
+    console.error('Rename error:', error);
+    return false;
+  }
+});
+
 ipcMain.handle('get-vault-path', () => vaultPath);
 
 ipcMain.handle('open-vault', async () => {

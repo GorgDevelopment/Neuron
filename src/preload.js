@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   writeFile: (vaultPath, fileName, content) => ipcRenderer.invoke('write-file', fileName, content),
   createNote: (noteName) => ipcRenderer.invoke('create-note', noteName),
   deleteFile: (fileName) => ipcRenderer.invoke('delete-note', fileName),
+  renameFile: (oldPath, newPath) => ipcRenderer.invoke('rename-file', oldPath, newPath),
   getVaultPath: () => ipcRenderer.invoke('get-vault-path'),
   openVault: () => ipcRenderer.invoke('open-vault'),
   onVaultOpened: (callback) => ipcRenderer.on('vault-opened', callback),

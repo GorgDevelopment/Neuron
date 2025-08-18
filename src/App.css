@@ -2,8 +2,8 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #1e1e1e;
-  color: #e0e0e0;
+  background: var(--color-primary, #1e1e1e);
+  color: var(--color-text, #e0e0e0);
 }
 
 .app-header {
@@ -11,27 +11,65 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 16px;
-  background: #2d2d2d;
-  border-bottom: 1px solid #404040;
+  background: var(--color-tertiary, #2d2d2d);
+  border-bottom: 1px solid var(--color-border, #404040);
   height: 48px;
 }
 
 .app-title {
   font-size: 18px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--color-text, #ffffff);
 }
 
 .view-controls {
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+.theme-selector {
+  margin-left: 16px;
+}
+
+.unselect-file-btn {
+  padding: 6px 12px;
+  border: none;
+  background: var(--color-border, #404040);
+  color: var(--color-text, #e0e0e0);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  transition: all 0.2s;
+  margin-left: 8px;
+}
+
+.unselect-file-btn:hover {
+  background: var(--color-error, #ff4444);
+  color: #ffffff;
+}
+
+.theme-dropdown {
+  padding: 6px 12px;
+  border: 1px solid var(--color-border, #404040);
+  border-radius: 4px;
+  background: var(--color-secondary, #252525);
+  color: var(--color-text, #e0e0e0);
+  font-size: 14px;
+  cursor: pointer;
+  outline: none;
+}
+
+.theme-dropdown:hover {
+  border-color: var(--color-accent, #007acc);
 }
 
 .view-controls button {
   padding: 6px 12px;
   border: none;
-  background: #404040;
-  color: #e0e0e0;
+  background: var(--color-border, #404040);
+  color: var(--color-text, #e0e0e0);
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
@@ -39,11 +77,11 @@
 }
 
 .view-controls button:hover {
-  background: #505050;
+  background: var(--color-secondary, #505050);
 }
 
 .view-controls button.active {
-  background: #007acc;
+  background: var(--color-accent, #007acc);
   color: #ffffff;
 }
 
@@ -58,6 +96,73 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: var(--color-primary, #1e1e1e);
+}
+
+.welcome-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: var(--color-primary, #1e1e1e);
+}
+
+.welcome-content {
+  text-align: center;
+  max-width: 500px;
+  padding: 40px;
+}
+
+.welcome-content h1 {
+  font-size: 2.5rem;
+  color: var(--color-text, #e0e0e0);
+  margin-bottom: 16px;
+  font-weight: 300;
+}
+
+.welcome-content p {
+  font-size: 1.2rem;
+  color: var(--color-textSecondary, #b0b0b0);
+  margin-bottom: 32px;
+}
+
+.welcome-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.welcome-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 160px;
+}
+
+.welcome-btn.primary {
+  background: var(--color-accent, #007acc);
+  color: #ffffff;
+}
+
+.welcome-btn.primary:hover {
+  background: var(--color-accent, #007acc);
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.welcome-btn.secondary {
+  background: var(--color-secondary, #252525);
+  color: var(--color-text, #e0e0e0);
+  border: 1px solid var(--color-border, #404040);
+}
+
+.welcome-btn.secondary:hover {
+  background: var(--color-tertiary, #2d2d2d);
+  border-color: var(--color-accent, #007acc);
 }
 
 .modal-overlay {
@@ -221,10 +326,47 @@
 .file-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 8px 12px;
   cursor: pointer;
   transition: background 0.2s;
   gap: 8px;
+}
+
+.file-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.file-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.file-item:hover .file-actions {
+  opacity: 1;
+}
+
+.rename-btn, .delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 3px;
+  font-size: 12px;
+  transition: background-color 0.2s ease;
+}
+
+.rename-btn:hover {
+  background-color: var(--hover-color);
+}
+
+.delete-btn:hover {
+  background-color: #ff4444;
 }
 
 .file-item:hover {
@@ -353,8 +495,8 @@
   height: 100%;
   border: none;
   outline: none;
-  background: #1e1e1e;
-  color: #e0e0e0;
+  background: var(--color-primary, #1e1e1e);
+  color: var(--color-text, #e0e0e0);
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
   font-size: 14px;
   line-height: 1.6;
@@ -552,12 +694,11 @@
 .command-input,
 .switcher-input {
   width: 100%;
-  padding: 12px;
+  padding: 16px;
   border: none;
-  background: #1e1e1e;
-  color: #e0e0e0;
+  background: transparent;
+  color: var(--color-text, #e0e0e0);
   font-size: 16px;
-  border-radius: 4px;
   outline: none;
 }
 
@@ -1909,6 +2050,39 @@ input:checked + .toggle-slider:before {
   color: #e0e0e0;
   line-height: 1.6;
   white-space: pre-wrap;
+}
+
+.graph-context-menu {
+  position: absolute;
+  background: var(--color-secondary, #2d2d2d);
+  border: 1px solid var(--color-border, #404040);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  min-width: 180px;
+}
+
+.connecting-mode {
+  background: var(--color-accent, #007acc);
+  color: white;
+  padding: 12px;
+  border-radius: 6px;
+  margin: 8px 0;
+  text-align: center;
+}
+
+.connecting-mode button {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.connecting-mode button:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .smart-suggestions {
