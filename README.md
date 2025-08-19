@@ -1,6 +1,7 @@
 # Neuron 🧠
 
 A powerful, modern note-taking and knowledge management desktop application built with Electron and React. Neuron combines the best features of Obsidian-style linking with advanced AI assistance and beautiful animations.
+You're more than welcome to contribute to this project.
 
 ![Neuron App](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
