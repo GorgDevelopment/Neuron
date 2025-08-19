@@ -7,7 +7,6 @@ import CommandPalette from './components/CommandPalette';
 import QuickSwitcher from './components/QuickSwitcher';
 import BacklinksPanel from './components/BacklinksPanel';
 import SearchPanel from './components/SearchPanel';
-import ThemeManager from './components/ThemeManager';
 import TagsPanel from './components/TagsPanel';
 import Canvas from './components/Canvas';
 import SettingsPanel from './components/SettingsPanel';
@@ -22,6 +21,12 @@ import useAutoSave from './components/AutoSave';
 import { FloatingParticles, FadeIn, SlideIn } from './components/AnimatedTransitions';
 import { Allotment } from 'allotment';
 import 'allotment/dist/style.css';
+import NavSidebar from './components/NavSidebar';
+import DocumentsManager from './components/DocumentsManager';
+import ContactsManager from './components/ContactsManager';
+import FinanceManager from './components/FinanceManager';
+import SynapsesView from './components/SynapsesView';
+import NotesTopBar from './components/NotesTopBar';
 
 function App({ currentTheme, themes, onThemeChange }) {
   const [selectedVaultPath, setSelectedVaultPath] = useState(null);
@@ -39,6 +44,8 @@ function App({ currentTheme, themes, onThemeChange }) {
   const [noteOrganizerVisible, setNoteOrganizerVisible] = useState(false);
   const [canvasModalVisible, setCanvasModalVisible] = useState(false);
   const [selectedRightPanel, setSelectedRightPanel] = useState('backlinks');
+  const [navCollapsed, setNavCollapsed] = useState(false);
+  const [activeModule, setActiveModule] = useState('notes');
 
   const loadVaultFiles = useCallback(async () => {
     if (!selectedVaultPath) return;
@@ -304,191 +311,176 @@ Start writing your thoughts here...
 
   return (
     <div className="app">
-      <div className="app-header">
-        <div className="app-title">Neuron</div>
-        <div className="view-controls">
-          <button 
-            className={activeViewMode === 'editor' ? 'active' : ''}
-            onClick={() => setActiveViewMode('editor')}
-          >
-            Editor
-          </button>
-          <button 
-            className={activeViewMode === 'graph' ? 'active' : ''}
-            onClick={() => setActiveViewMode('graph')}
-          >
-            Graph
-          </button>
-          <button 
-            className={activeViewMode === 'canvas' ? 'active' : ''}
-            onClick={() => setActiveViewMode('canvas')}
-          >
-            Canvas
-          </button>
-          {activeFileName && (
-            <button 
-              className="unselect-file-btn"
-              onClick={() => {
-                setActiveFileName(null);
-                setEditorContent('');
-              }}
-              title="Close file"
-            >
-              ×
-            </button>
-          )}
-          <div className="theme-selector">
-            <select 
-              value={currentTheme} 
-              onChange={(e) => onThemeChange(e.target.value)}
-              className="theme-dropdown"
-            >
-              <option value="dark">Dark</option>
-              <option value="light">Light</option>
-              <option value="purple">Purple</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      
-      <div className="app-body">
-          <Sidebar 
-            files={filteredMarkdownFiles} 
-            currentFile={activeFileName}
-            onFileSelect={loadFile}
-            onCreateNote={createNewNote}
-            onDeleteFile={deleteFile}
-            onRenameFile={renameFile}
-            searchQuery={fileSearchQuery}
-            onSearchChange={setFileSearchQuery}
-          />
-        
-        <div className="main-content">
-          {activeViewMode === 'editor' && !activeFileName && (
-            <div className="welcome-screen">
-              <div className="welcome-content">
-                <h1>Welcome to Neuron</h1>
-                <p>Your intelligent note-taking companion</p>
-                <div className="welcome-actions">
-                  <button onClick={() => createNewNote()} className="welcome-btn primary">
-                    Create New Note
-                  </button>
-                  <button onClick={() => setCommandPaletteVisible(true)} className="welcome-btn secondary">
-                    Open Command Palette
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-          {activeViewMode === 'editor' && activeFileName && (
-          <FadeIn>
-            <div className="editor-container">
-              <div className="editor-header">
-                <div className="file-info">
-                  <span className="file-icon">📝</span>
-                  <span className="file-name">{activeFileName}</span>
-                </div>
-                <div className="editor-actions">
-                  <button 
-                    className="save-btn"
-                    onClick={() => saveFile(activeFileName, editorContent)}
-                    title="Save (Ctrl+S)"
-                  >
-                    Save
-                  </button>
-                </div>
-              </div>
-              <Editor 
-                content={editorContent}
-                onChange={setEditorContent}
-                onSave={() => saveFile(activeFileName, editorContent)}
-                files={markdownFiles}
-                currentFile={activeFileName}
-              />
-              <SmartSuggestions
-                currentContent={editorContent}
-                files={markdownFiles}
-                onSuggestionClick={handleSuggestionClick}
-              />
-            </div>
-          </FadeIn>
-        )}
-        {activeViewMode === 'graph' && (
-          <FadeIn>
-            <AdvancedGraphView 
-              files={markdownFiles}
-              currentFile={activeFileName}
-              onNodeClick={loadFile}
-              onCreateNote={createNewNote}
-              onDeleteNote={deleteFile}
-            />
-          </FadeIn>
-        )}
-        {activeViewMode === 'canvas' && (
-          <FadeIn>
-            <Canvas />
-          </FadeIn>
-        )}
-        </div>
-        
-        {activeViewMode === 'editor' && activeFileName && (
-          <div className="right-panels">
-            <div className="panel-tabs">
-              <button 
-                className={selectedRightPanel === 'backlinks' ? 'active' : ''}
-                onClick={() => setSelectedRightPanel('backlinks')}
-              >
-                Backlinks
-              </button>
-              <button 
-                className={selectedRightPanel === 'outline' ? 'active' : ''}
-                onClick={() => setSelectedRightPanel('outline')}
-              >
-                Outline
-              </button>
-              <button 
-                className={selectedRightPanel === 'tags' ? 'active' : ''}
-                onClick={() => setSelectedRightPanel('tags')}
-              >
-                Tags
-              </button>
-              <button 
-                className={selectedRightPanel === 'search' ? 'active' : ''}
-                onClick={() => setSelectedRightPanel('search')}
-              >
-                Search
-              </button>
-            </div>
-            
-            <div className="panel-content">
-              {selectedRightPanel === 'backlinks' && (
-                <BacklinksPanel 
-                  currentFile={activeFileName}
-                  files={markdownFiles}
-                  onFileSelect={loadFile}
-                />
-              )}
-              {selectedRightPanel === 'outline' && (
-                <OutlinePanel content={editorContent} />
-              )}
-              {selectedRightPanel === 'tags' && (
-                <TagsPanel 
-                  files={markdownFiles}
+      <div className={`app-with-nav ${navCollapsed ? 'collapsed' : 'expanded'}`}>
+        <NavSidebar 
+          collapsed={navCollapsed}
+          active={activeModule}
+          onSelect={setActiveModule}
+          onToggle={() => setNavCollapsed(v => !v)}
+        />
+        <div className="app-main">
+          {activeModule === 'notes' ? (
+            <Allotment defaultSizes={[280, 720]}>
+              <Allotment.Pane minSize={220} maxSize={480} preferredSize={280} snap>
+                <Sidebar 
+                  files={filteredMarkdownFiles} 
                   currentFile={activeFileName}
                   onFileSelect={loadFile}
-                />
-              )}
-              {selectedRightPanel === 'search' && (
-                <SearchPanel 
-                  files={markdownFiles}
-                  onFileSelect={loadFile}
+                  onCreateNote={createNewNote}
+                  onDeleteFile={deleteFile}
+                  onRenameFile={renameFile}
                   searchQuery={fileSearchQuery}
                   onSearchChange={setFileSearchQuery}
                 />
-              )}
+              </Allotment.Pane>
+              <Allotment.Pane minSize={400}>
+                <div className="main-content">
+                  <NotesTopBar 
+                    activeViewMode={activeViewMode}
+                    onChangeView={setActiveViewMode}
+                    currentTheme={currentTheme}
+                    onThemeChange={onThemeChange}
+                  />
+
+                  {activeViewMode === 'editor' && !activeFileName && (
+                    <div className="welcome-screen">
+                      <div className="welcome-content">
+                        <h1>Welcome to Neuron</h1>
+                        <p>Your intelligent note-taking companion</p>
+                        <div className="welcome-actions">
+                          <button onClick={() => createNewNote()} className="welcome-btn primary">
+                            Create New Note
+                          </button>
+                          <button onClick={() => setCommandPaletteVisible(true)} className="welcome-btn secondary">
+                            Open Command Palette
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeViewMode === 'editor' && activeFileName && (
+                    <FadeIn>
+                      <div className="editor-container">
+                        <div className="editor-header">
+                          <div className="file-info">
+                            <span className="file-icon">📝</span>
+                            <span className="file-name">{activeFileName}</span>
+                          </div>
+                          <div className="editor-actions">
+                            <button 
+                              className="save-btn"
+                              onClick={() => saveFile(activeFileName, editorContent)}
+                              title="Save (Ctrl+S)"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                        <Editor 
+                          content={editorContent}
+                          onChange={setEditorContent}
+                          onSave={() => saveFile(activeFileName, editorContent)}
+                          files={markdownFiles}
+                          currentFile={activeFileName}
+                        />
+                        <SmartSuggestions
+                          currentContent={editorContent}
+                          files={markdownFiles}
+                          onSuggestionClick={handleSuggestionClick}
+                        />
+                      </div>
+                    </FadeIn>
+                  )}
+
+                  {activeViewMode === 'graph' && (
+                    <FadeIn>
+                      <AdvancedGraphView 
+                        files={markdownFiles}
+                        currentFile={activeFileName}
+                        onNodeClick={loadFile}
+                        onCreateNote={createNewNote}
+                        onDeleteNote={deleteFile}
+                      />
+                    </FadeIn>
+                  )}
+
+                  {activeViewMode === 'canvas' && (
+                    <FadeIn>
+                      <Canvas />
+                    </FadeIn>
+                  )}
+
+                  {activeViewMode === 'editor' && activeFileName && (
+                    <div className="right-panels">
+                      <div className="panel-tabs">
+                        <button 
+                          className={selectedRightPanel === 'backlinks' ? 'active' : ''}
+                          onClick={() => setSelectedRightPanel('backlinks')}
+                        >
+                          Backlinks
+                        </button>
+                        <button 
+                          className={selectedRightPanel === 'outline' ? 'active' : ''}
+                          onClick={() => setSelectedRightPanel('outline')}
+                        >
+                          Outline
+                        </button>
+                        <button 
+                          className={selectedRightPanel === 'tags' ? 'active' : ''}
+                          onClick={() => setSelectedRightPanel('tags')}
+                        >
+                          Tags
+                        </button>
+                        <button 
+                          className={selectedRightPanel === 'search' ? 'active' : ''}
+                          onClick={() => setSelectedRightPanel('search')}
+                        >
+                          Search
+                        </button>
+                      </div>
+                      
+                      <div className="panel-content">
+                        {selectedRightPanel === 'backlinks' && (
+                          <BacklinksPanel 
+                            currentFile={activeFileName}
+                            files={markdownFiles}
+                            onFileSelect={loadFile}
+                          />
+                        )}
+                        {selectedRightPanel === 'outline' && (
+                          <OutlinePanel content={editorContent} />
+                        )}
+                        {selectedRightPanel === 'tags' && (
+                          <TagsPanel 
+                            files={markdownFiles}
+                            currentFile={activeFileName}
+                            onFileSelect={loadFile}
+                          />
+                        )}
+                        {selectedRightPanel === 'search' && (
+                          <SearchPanel 
+                            files={markdownFiles}
+                            onFileSelect={loadFile}
+                            searchQuery={fileSearchQuery}
+                            onSearchChange={setFileSearchQuery}
+                          />
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Allotment.Pane>
+            </Allotment>
+          ) : (
+            <div className="module-shell">
+              {activeModule === 'documents' && <DocumentsManager vaultPath={selectedVaultPath} />}
+              {activeModule === 'contacts' && <ContactsManager />}
+              {activeModule === 'finance' && <FinanceManager />}
+              {activeModule === 'synapses' && <SynapsesView />}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <StatusBar 
@@ -559,12 +551,4 @@ Start writing your thoughts here...
   );
 }
 
-function AppWithTheme() {
-  return (
-    <ThemeManager>
-      <App />
-    </ThemeManager>
-  );
-}
-
-export default AppWithTheme;
+export default App;

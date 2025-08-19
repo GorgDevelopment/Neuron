@@ -1,229 +1,67 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-function Canvas({ onClose }) {
+function Canvas() {
   const canvasRef = useRef();
   const [isDrawing, setIsDrawing] = useState(false);
-  const [tool, setTool] = useState('pen');
-  const [color, setColor] = useState('#007acc');
-  const [strokeWidth, setStrokeWidth] = useState(2);
-  const [brushSize, setBrushSize] = useState(2);
-  const [elements, setElements] = useState([]);
-  const [selectedElement, setSelectedElement] = useState(null);
+  const [color, setColor] = useState('#58a6ff');
+  const [size, setSize] = useState(3);
+  const [paths, setPaths] = useState([]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-    
-    const backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--color-primary') || '#1e1e1e';
-    ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    redrawCanvas();
-  }, [elements]);
+    redraw();
+  }, [paths]);
 
-  const redrawCanvas = () => {
+  const redraw = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    
-    const backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--color-primary') || '#1e1e1e';
-    ctx.fillStyle = backgroundColor;
+    const bg = '#0d1117';
+    ctx.fillStyle = bg;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    elements.forEach(element => {
-      ctx.strokeStyle = element.color;
-      ctx.lineWidth = element.strokeWidth;
+    paths.forEach(p => {
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = p.size;
       ctx.lineCap = 'round';
-      
-      if (element.type === 'path') {
-        ctx.beginPath();
-        element.points.forEach((point, index) => {
-          if (index === 0) {
-            ctx.moveTo(point.x, point.y);
-          } else {
-            ctx.lineTo(point.x, point.y);
-          }
-        });
-        ctx.stroke();
-      } else if (element.type === 'text') {
-        ctx.fillStyle = element.color;
-        ctx.font = `${element.fontSize || 16}px Arial`;
-        ctx.fillText(element.text, element.x, element.y);
-      } else if (element.type === 'note') {
-        ctx.fillStyle = element.backgroundColor || '#2d2d2d';
-        ctx.fillRect(element.x, element.y, element.width, element.height);
-        ctx.strokeStyle = element.borderColor || '#404040';
-        ctx.strokeRect(element.x, element.y, element.width, element.height);
-        
-        ctx.fillStyle = element.textColor || '#e0e0e0';
-        ctx.font = '14px Arial';
-        const lines = element.text.split('\n');
-        lines.forEach((line, index) => {
-          ctx.fillText(line, element.x + 10, element.y + 20 + (index * 18));
-        });
-      }
+      ctx.beginPath();
+      p.points.forEach((pt, i) => {
+        if (i === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.stroke();
     });
   };
 
-  const getMousePos = (e) => {
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    };
-  };
-
-  const handleMouseDown = (e) => {
-    if (tool === 'text') {
-      const rect = canvasRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      
-      const text = prompt('Enter text:');
-      if (text && text.trim()) {
-        const newElement = {
-          type: 'text',
-          x,
-          y,
-          text: text.trim(),
-          color,
-          fontSize: 16
-        };
-        setElements(prevElements => [...prevElements, newElement]);
-      }
-      return;
-    }
-    
-    setIsDrawing(true);
+  const start = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
-    if (tool === 'pen') {
-      const newElement = {
-        type: 'path',
-        points: [{ x, y }],
-        color,
-        strokeWidth
-      };
-      setElements(prevElements => [...prevElements, newElement]);
-    }
+    setIsDrawing(true);
+    setPaths(prev => [...prev, { color, size, points: [{ x, y }] }]);
   };
 
   const draw = (e) => {
-    if (!isDrawing || tool !== 'pen') return;
-    
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
+    if (!isDrawing) return;
+    const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    
-    setElements(prevElements => {
-      const newElements = [...prevElements];
-      const currentPath = newElements[newElements.length - 1];
-      if (currentPath && currentPath.type === 'path') {
-        currentPath.points.push({ x, y });
-      }
-      return newElements;
+    setPaths(prev => {
+      const next = [...prev];
+      next[next.length - 1].points.push({ x, y });
+      return next;
     });
   };
 
-  const stopDrawing = () => {
-    setIsDrawing(false);
-  };
-
-  const addText = () => {
-    if (textInput.trim()) {
-      setElements(prev => [...prev, {
-        type: 'text',
-        text: textInput,
-        x: textPosition.x,
-        y: textPosition.y,
-        color,
-        size: brushSize,
-        id: Date.now()
-      }]);
-      setTextInput('');
-      setShowTextModal(false);
-    }
-  };
-
-  const addShape = (shape) => {
-    const canvas = canvasRef.current;
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    
-    setElements(prev => [...prev, {
-      type: 'shape',
-      shape,
-      x: centerX,
-      y: centerY,
-      width: 100,
-      height: 60,
-      radius: 40,
-      color,
-      size: brushSize,
-      id: Date.now()
-    }]);
-  };
+  const stop = () => setIsDrawing(false);
 
   const clearCanvas = () => {
     if (window.confirm('Are you sure you want to clear the canvas? This action cannot be undone.')) {
-      setElements([]);
+      setPaths([]);
     }
   };
 
-  const undoLastAction = () => {
-    if (elements.length > 0) {
-      setElements(prevElements => prevElements.slice(0, -1));
-    }
-  };
+  const undo = () => setPaths(prev => prev.slice(0, -1));
 
   return (
     <div className="canvas-view">
       <div className="canvas-toolbar">
-        <div className="toolbar-section">
-          <h4>🎨 Drawing Tools</h4>
-          <div className="tool-group">
-            <button 
-              className={`tool-btn ${tool === 'pen' ? 'active' : ''}`}
-              onClick={() => setTool('pen')}
-            >
-              ✏️ Draw
-            </button>
-            <button 
-              className={`tool-btn ${tool === 'text' ? 'active' : ''}`}
-              onClick={() => setTool('text')}
-            >
-              📝 Text
-            </button>
-            <button 
-              className={`tool-btn ${tool === 'select' ? 'active' : ''}`}
-              onClick={() => setTool('select')}
-            >
-              👆 Select
-            </button>
-          </div>
-        </div>
-        
-        <div className="toolbar-section">
-          <h4>🎯 Shapes</h4>
-          <div className="tool-group">
-            <button className="tool-btn" onClick={() => addShape('circle')}>
-              ⭕ Circle
-            </button>
-            <button className="tool-btn" onClick={() => addShape('rectangle')}>
-              ⬜ Box
-            </button>
-            <button className="tool-btn" onClick={() => addShape('arrow')}>
-              ➡️ Arrow
-            </button>
-          </div>
-        </div>
-        
         <div className="toolbar-section">
           <h4>🎨 Style</h4>
           <div className="style-controls">
@@ -236,13 +74,13 @@ function Canvas({ onClose }) {
               />
             </div>
             <div className="size-control">
-              <label>Size: {brushSize}px</label>
+              <label>Size: {size}px</label>
               <input
                 type="range"
                 min="1"
                 max="20"
-                value={brushSize}
-                onChange={(e) => setBrushSize(Number(e.target.value))}
+                value={size}
+                onChange={(e) => setSize(Number(e.target.value))}
               />
             </div>
           </div>
@@ -251,7 +89,7 @@ function Canvas({ onClose }) {
         <div className="toolbar-section">
           <h4>⚡ Actions</h4>
           <div className="tool-group">
-            <button className="tool-btn" onClick={undoLast}>
+            <button className="tool-btn" onClick={undo}>
               ↶ Undo
             </button>
             <button className="tool-btn danger" onClick={clearCanvas}>
@@ -267,40 +105,12 @@ function Canvas({ onClose }) {
           width={1400}
           height={900}
           className="drawing-canvas"
-          onMouseDown={startDrawing}
+          onMouseDown={start}
           onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
+          onMouseUp={stop}
+          onMouseLeave={stop}
         />
-        
-        {selectedElement && (
-          <div className="element-properties">
-            <h4>Element Properties</h4>
-            <p>Type: {selectedElement.type}</p>
-            <button onClick={() => setSelectedElement(null)}>Delete</button>
-          </div>
-        )}
       </div>
-
-      {showTextModal && (
-        <div className="text-modal">
-          <div className="text-modal-content">
-            <h4>Add Text</h4>
-            <input
-              type="text"
-              value={textInput}
-              onChange={(e) => setTextInput(e.target.value)}
-              placeholder="Enter your text..."
-              autoFocus
-              onKeyPress={(e) => e.key === 'Enter' && addText()}
-            />
-            <div className="text-modal-actions">
-              <button onClick={addText}>Add</button>
-              <button onClick={() => setShowTextModal(false)}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

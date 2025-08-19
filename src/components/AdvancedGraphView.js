@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
-import { FadeIn, ScaleIn } from './AnimatedTransitions';
 
 function AdvancedGraphView({ files, currentFile, onNodeClick, onCreateNote, onDeleteNote }) {
   const svgRef = useRef();
@@ -8,6 +7,7 @@ function AdvancedGraphView({ files, currentFile, onNodeClick, onCreateNote, onDe
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const [selectedNode, setSelectedNode] = useState(null);
   const [contextMenu, setContextMenu] = useState({ show: false, x: 0, y: 0, node: null });
+  const [mode, setMode] = useState('force');
   const [graphSettings, setGraphSettings] = useState({
     linkDistance: 120,
     chargeStrength: -400,
@@ -23,9 +23,14 @@ function AdvancedGraphView({ files, currentFile, onNodeClick, onCreateNote, onDe
     if (files && files.length > 0) {
       const data = buildGraphData(files);
       setGraphData(data);
-      renderGraph(data);
+      if (mode === 'force') renderForceGraph(data);
+      if (mode === 'timeline') renderTimeline(data);
+      if (mode === 'tree') renderTree(data);
+      if (mode === 'heatmap') renderHeatmap(data);
+    } else {
+      clearSvg();
     }
-  }, [files, graphSettings]);
+  }, [files, graphSettings, mode]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -120,7 +125,12 @@ function AdvancedGraphView({ files, currentFile, onNodeClick, onCreateNote, onDe
     return Math.min(occurrences, 5);
   };
 
-  const renderGraph = useCallback((data) => {
+  const clearSvg = () => {
+    if (!svgRef.current) return;
+    d3.select(svgRef.current).selectAll('*').remove();
+  };
+
+  const renderForceGraph = useCallback((data) => {
     if (!svgRef.current || !containerRef.current) return;
     
     const svg = d3.select(svgRef.current);
@@ -320,6 +330,104 @@ function AdvancedGraphView({ files, currentFile, onNodeClick, onCreateNote, onDe
     }
   }, [graphSettings, onNodeClick]);
 
+  const renderTimeline = useCallback((data) => {
+    if (!svgRef.current || !containerRef.current) return;
+    const svg = d3.select(svgRef.current);
+    svg.selectAll('*').remove();
+    const width = containerRef.current.clientWidth || 1000;
+    const height = containerRef.current.clientHeight || 700;
+    svg.attr('width', width).attr('height', height);
+    if (!data.nodes.length) return;
+
+    const x = d3.scaleTime()
+      .domain(d3.extent(data.nodes, d => new Date(d.modified)))
+      .range([60, width - 40]);
+    const y = d3.scalePoint().domain(['Notes']).range([height/2, height/2]);
+
+    const g = svg.append('g');
+    g.append('g').attr('transform', `translate(0,${height/2})`).call(d3.axisBottom(x).ticks(6)).selectAll('text').attr('fill', '#8b949e');
+
+    g.selectAll('circle').data(data.nodes)
+      .enter().append('circle')
+      .attr('cx', d => x(new Date(d.modified)))
+      .attr('cy', y('Notes'))
+      .attr('r', d => 4 + Math.min(12, (d.connections||0)))
+      .attr('fill', '#58a6ff')
+      .attr('opacity', 0.8)
+      .on('click', (e,d) => onNodeClick && onNodeClick(d.name));
+  }, [onNodeClick]);
+
+  const renderTree = useCallback((data) => {
+    if (!svgRef.current || !containerRef.current) return;
+    const svg = d3.select(svgRef.current);
+    svg.selectAll('*').remove();
+    const width = containerRef.current.clientWidth || 1000;
+    const height = containerRef.current.clientHeight || 700;
+    svg.attr('width', width).attr('height', height);
+    if (!data.nodes.length) return;
+
+    const root = { name: 'Vault', children: [] };
+    const clusters = d3.group(data.nodes, d => d.cluster);
+    clusters.forEach((vals, key) => {
+      root.children.push({ name: key, children: vals.map(v => ({ name: v.name })) });
+    });
+    const hierarchy = d3.hierarchy(root);
+    const treeLayout = d3.tree().size([height - 80, width - 160]);
+    treeLayout(hierarchy);
+
+    const g = svg.append('g').attr('transform', 'translate(80,40)');
+    g.selectAll('path.link')
+      .data(hierarchy.links())
+      .enter().append('path')
+      .attr('class', 'link')
+      .attr('fill', 'none')
+      .attr('stroke', '#30363d')
+      .attr('d', d3.linkHorizontal().x(d => d.y).y(d => d.x));
+
+    const node = g.selectAll('g.node')
+      .data(hierarchy.descendants())
+      .enter().append('g')
+      .attr('transform', d => `translate(${d.y},${d.x})`);
+    node.append('circle').attr('r', 4).attr('fill', '#58a6ff');
+    node.append('text').text(d => d.data.name.replace?.('.md','') || d.data.name)
+      .attr('dy', 4).attr('x', 8).attr('fill', '#c9d1d9').style('font-size', '12px');
+  }, []);
+
+  const renderHeatmap = useCallback((data) => {
+    if (!svgRef.current || !containerRef.current) return;
+    const svg = d3.select(svgRef.current);
+    svg.selectAll('*').remove();
+    const width = containerRef.current.clientWidth || 1000;
+    const height = containerRef.current.clientHeight || 700;
+    svg.attr('width', width).attr('height', height);
+    if (!data.nodes.length) return;
+
+    const tagFreq = new Map();
+    data.nodes.forEach(n => n.tags.forEach(t => tagFreq.set(t, (tagFreq.get(t)||0)+1)));
+    const tags = Array.from(tagFreq.keys()).slice(0, 30);
+    const notes = data.nodes;
+
+    const cellSize = 18;
+    const x = d3.scaleBand().domain(notes.map(n => n.name)).range([120, width-20]).padding(0.05);
+    const y = d3.scaleBand().domain(tags).range([40, Math.min(height-20, 40 + tags.length * cellSize)]).padding(0.05);
+    const color = d3.scaleSequential(d3.interpolateYlGnBu).domain([0, d3.max(tags, t => tagFreq.get(t)) || 1]);
+
+    const g = svg.append('g');
+    g.selectAll('rect')
+      .data(tags.flatMap(t => notes.map(n => ({ t, n, v: n.tags.includes(t) ? 1 : 0 }))))
+      .enter().append('rect')
+      .attr('x', d => x(d.n.name))
+      .attr('y', d => y(d.t))
+      .attr('width', x.bandwidth())
+      .attr('height', y.bandwidth())
+      .attr('fill', d => d.v ? color(tagFreq.get(d.t)) : '#161b22')
+      .attr('stroke', '#0d1117')
+      .on('click', (e,d) => d.v && onNodeClick && onNodeClick(d.n.name));
+
+    g.append('g').attr('transform', `translate(0,${y.range()[0]})`).call(d3.axisLeft(y)).selectAll('text').attr('fill', '#8b949e');
+    g.append('g').attr('transform', `translate(0,${y.range()[1]}) rotate(-90)`).style('display','none');
+  }, [onNodeClick]);
+
   const [connectingMode, setConnectingMode] = useState(false);
   const [sourceNode, setSourceNode] = useState(null);
 
@@ -383,8 +491,7 @@ function AdvancedGraphView({ files, currentFile, onNodeClick, onCreateNote, onDe
     <div className="graph-universe">
       <div className="universe-controls">
         <div className="universe-title">
-          <span style={{fontSize: '24px'}}>🌌</span>
-          <h2>Knowledge Universe</h2>
+          <h2>Knowledge Graph</h2>
         </div>
         
         <div className="universe-stats">
@@ -393,6 +500,15 @@ function AdvancedGraphView({ files, currentFile, onNodeClick, onCreateNote, onDe
         </div>
 
         <div className="universe-settings">
+          <div className="setting-group">
+            <label>Mode</label>
+            <select value={mode} onChange={(e) => setMode(e.target.value)}>
+              <option value="force">Force</option>
+              <option value="timeline">Timeline</option>
+              <option value="tree">Tree</option>
+              <option value="heatmap">Heatmap</option>
+            </select>
+          </div>
           <div className="setting-group">
             <label>Link Distance</label>
             <input
@@ -445,13 +561,13 @@ function AdvancedGraphView({ files, currentFile, onNodeClick, onCreateNote, onDe
             className={`universe-btn ${graphSettings.showLabels ? 'primary' : ''}`}
             onClick={() => setGraphSettings(prev => ({ ...prev, showLabels: !prev.showLabels }))}
           >
-            {graphSettings.showLabels ? '🏷️ Labels On' : '🏷️ Labels Off'}
+            {graphSettings.showLabels ? 'Labels On' : 'Labels Off'}
           </button>
           <button 
             className={`universe-btn ${graphSettings.physics ? 'primary' : ''}`}
             onClick={() => setGraphSettings(prev => ({ ...prev, physics: !prev.physics }))}
           >
-            {graphSettings.physics ? '⚡ Physics On' : '⚡ Physics Off'}
+            {graphSettings.physics ? 'Physics On' : 'Physics Off'}
           </button>
         </div>
       </div>
@@ -463,7 +579,7 @@ function AdvancedGraphView({ files, currentFile, onNodeClick, onCreateNote, onDe
       {selectedNode && (
         <div className="node-details-panel">
           <div className="node-details-header">
-            <h3>📄 {selectedNode.name.replace('.md', '')}</h3>
+            <h3>{selectedNode.name.replace('.md', '')}</h3>
             <button className="close-btn" onClick={() => setSelectedNode(null)}>×</button>
           </div>
           
@@ -493,19 +609,19 @@ function AdvancedGraphView({ files, currentFile, onNodeClick, onCreateNote, onDe
               className="node-action-btn primary"
               onClick={() => onNodeClick && onNodeClick(selectedNode.name)}
             >
-              📖 Open Note
+              Open Note
             </button>
             <button 
               className="node-action-btn secondary"
               onClick={() => onCreateNote && onCreateNote(`Connected to ${selectedNode.name.replace('.md', '')}`)}
             >
-              ➕ Create Connected
+              Create Connected
             </button>
             <button 
               className="node-action-btn danger"
               onClick={() => onDeleteNote && window.confirm(`Delete "${selectedNode.name}"?`) && onDeleteNote(selectedNode.name)}
             >
-              🗑️ Delete Note
+              Delete Note
             </button>
           </div>
         </div>
@@ -532,20 +648,20 @@ function AdvancedGraphView({ files, currentFile, onNodeClick, onCreateNote, onDe
             className="context-menu-item"
             onClick={() => handleContextAction('open', contextMenu.node)}
           >
-            📖 Open Note
+            Open Note
           </div>
           <div 
             className="context-menu-item"
             onClick={() => handleContextAction('create', contextMenu.node)}
           >
-            ➕ Create Connected Note
+            Create Connected Note
           </div>
           <div className="context-menu-divider"></div>
           <div 
             className="context-menu-item danger"
             onClick={() => handleContextAction('delete', contextMenu.node)}
           >
-            🗑️ Delete Note
+            Delete Note
           </div>
         </div>
       )}
